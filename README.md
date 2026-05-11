@@ -1,0 +1,3 @@
+I prioritized the feel of the app over feature density, aiming for a clean interface that stays focused on the core todo actions. The layout intentionally adapts when the keyboard opens: key elements shift, collapse, or re-center so the UI feels responsive instead of cramped.
+
+Animations are subtle and supportive, not decorative; transitions fade, lift, and resize gently to guide attention without slowing interaction. I also added light haptic feedback for key actions (adding, completing, and deleting tasks) to make interactions feel more tactile and satisfying. The mascot-driven experience keeps the app warm and memorable, using progress states and friendly copy to encourage users to come back and keep completing tasks.

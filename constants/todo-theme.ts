@@ -1,0 +1,16 @@
+export const palette = {
+  ink: '#1E2D33',
+  muted: '#8B8896',
+  canvas: '#FFF8EE',
+  paper: '#FFFFFF',
+  paperSoft: '#FFF2DF',
+  sage: '#6B5BFF',
+  sageSoft: '#EDEAFF',
+  clay: '#FF7A3D',
+  butter: '#FFB35C',
+  line: '#F0E3D7',
+  lilac: '#F0E9FF',
+  peach: '#FFE2C2',
+  blue: '#6B5BFF',
+  white: '#FFFFFF',
+};
