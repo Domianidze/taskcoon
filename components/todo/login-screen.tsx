@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, Text, TextInput, View } from 'react-native';
 
 import { LabelledInput } from './labelled-input';
 import { styles } from './styles';
 
 const loginMascot = require('@/assets/images/mascot/login.png');
+const iosLoginKeyboardReserve = 292;
 
 type LoginScreenProps = {
   intro: Animated.Value;
@@ -27,6 +28,27 @@ export function LoginScreen({
   const [isLoginInputFocused, setIsLoginInputFocused] = useState(false);
   const heroVisibility = useRef(new Animated.Value(1)).current;
   const passwordInputRef = useRef<TextInput>(null);
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearBlurTimeout = () => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+  };
+
+  const handleInputFocus = () => {
+    clearBlurTimeout();
+    setIsLoginInputFocused(true);
+  };
+
+  const handleInputBlur = () => {
+    clearBlurTimeout();
+    blurTimeoutRef.current = setTimeout(() => {
+      setIsLoginInputFocused(false);
+      blurTimeoutRef.current = null;
+    }, 80);
+  };
 
   useEffect(() => {
     Animated.timing(heroVisibility, {
@@ -37,6 +59,8 @@ export function LoginScreen({
     }).start();
   }, [heroVisibility, isLoginInputFocused]);
 
+  useEffect(() => clearBlurTimeout, []);
+
   return (
     <Animated.View
       style={[
@@ -44,6 +68,8 @@ export function LoginScreen({
         {
           justifyContent:  'center',
           marginTop: isLoginInputFocused ? 0 : -100,
+          paddingBottom:
+            Platform.OS === 'ios' && isLoginInputFocused ? iosLoginKeyboardReserve : 22,
           paddingTop: isLoginInputFocused ? 4 : 22,
         },
         {
@@ -86,24 +112,32 @@ export function LoginScreen({
 
       <View style={styles.loginCard}>
         <LabelledInput
+          autoComplete="off"
+          autoCorrect={false}
           blurOnSubmit={false}
-          onBlur={() => setIsLoginInputFocused(false)}
+          onBlur={handleInputBlur}
           onChangeText={setUsername}
-          onFocus={() => setIsLoginInputFocused(true)}
+          onFocus={handleInputFocus}
           onSubmitEditing={() => passwordInputRef.current?.focus()}
           placeholder="Username"
           returnKeyType="next"
+          spellCheck={false}
+          textContentType="none"
           value={username}
         />
         <LabelledInput
-          onBlur={() => setIsLoginInputFocused(false)}
+          autoComplete="off"
+          autoCorrect={false}
+          onBlur={handleInputBlur}
           onChangeText={setPassword}
-          onFocus={() => setIsLoginInputFocused(true)}
+          onFocus={handleInputFocus}
           onSubmitEditing={onLogin}
           placeholder="Password"
           ref={passwordInputRef}
           returnKeyType="done"
           secureTextEntry
+          spellCheck={false}
+          textContentType="none"
           value={password}
         />
         <Pressable

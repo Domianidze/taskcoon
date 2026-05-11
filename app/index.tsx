@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -7,6 +8,7 @@ import {
     LayoutAnimation,
     Platform,
     UIManager,
+    View,
 } from 'react-native';
 import 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,18 +17,25 @@ import { LoginScreen } from '@/components/todo/login-screen';
 import { styles } from '@/components/todo/styles';
 import { TaskDashboard } from '@/components/todo/task-dashboard';
 import { initialTasks } from '@/constants/todo';
+import type { Task } from '@/types/task';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const getUserTaskKey = (value: string) => value.trim().toLowerCase();
+const taskStorageKey = 'taskcoon.tasksByUser';
+
 export default function App() {
   const [isAuthed, setIsAuthed] = useState(false);
+  const [activeTaskKey, setActiveTaskKey] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isTaskInputFocused, setIsTaskInputFocused] = useState(false);
   const [taskText, setTaskText] = useState('');
   const [tasks, setTasks] = useState(initialTasks);
+  const [tasksByUser, setTasksByUser] = useState<Record<string, Task[]>>({});
+  const [hasLoadedSavedTasks, setHasLoadedSavedTasks] = useState(false);
   const intro = useRef(new Animated.Value(0)).current;
 
   const completedCount = tasks.filter((task) => task.completed).length;
@@ -40,6 +49,40 @@ export default function App() {
     }).start();
   }, [intro]);
 
+  useEffect(() => {
+    const loadSavedTasks = async () => {
+      try {
+        const savedTasks = await AsyncStorage.getItem(taskStorageKey);
+
+        if (savedTasks) {
+          setTasksByUser(JSON.parse(savedTasks) as Record<string, Task[]>);
+        }
+      } catch {
+        setTasksByUser({});
+      } finally {
+        setHasLoadedSavedTasks(true);
+      }
+    };
+
+    void loadSavedTasks();
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedSavedTasks) {
+      return;
+    }
+
+    const saveTasks = async () => {
+      try {
+        await AsyncStorage.setItem(taskStorageKey, JSON.stringify(tasksByUser));
+      } catch {
+        // Storage is best-effort in development runtimes where the native module may be unavailable.
+      }
+    };
+
+    void saveTasks();
+  }, [hasLoadedSavedTasks, tasksByUser]);
+
   const animateLayout = () => {
     LayoutAnimation.configureNext({
       duration: 320,
@@ -50,7 +93,9 @@ export default function App() {
   };
 
   const handleLogin = () => {
-    if (!username.trim() || !password.trim()) {
+    const taskKey = getUserTaskKey(username);
+
+    if (!taskKey || !password.trim()) {
       return;
     }
 
@@ -60,6 +105,8 @@ export default function App() {
       easing: Easing.in(Easing.quad),
       useNativeDriver: true,
     }).start(() => {
+      setActiveTaskKey(taskKey);
+      setTasks(tasksByUser[taskKey] ?? initialTasks);
       setIsAuthed(true);
       intro.setValue(0);
       Animated.timing(intro, {
@@ -68,6 +115,21 @@ export default function App() {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
+    });
+  };
+
+  const updateActiveTasks = (getNextTasks: (currentTasks: Task[]) => Task[]) => {
+    setTasks((currentTasks) => {
+      const nextTasks = getNextTasks(currentTasks);
+
+      if (activeTaskKey) {
+        setTasksByUser((currentTasksByUser) => ({
+          ...currentTasksByUser,
+          [activeTaskKey]: nextTasks,
+        }));
+      }
+
+      return nextTasks;
     });
   };
 
@@ -80,12 +142,12 @@ export default function App() {
 
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     animateLayout();
-    setTasks((currentTasks) => [
+    updateActiveTasks((currentTasks) => [
       {
         id: `${Date.now()}`,
         title,
         completed: false,
-        createdAt: 'Just now',
+        createdAt: new Date().toISOString(),
       },
       ...currentTasks,
     ]);
@@ -102,9 +164,17 @@ export default function App() {
     }
 
     animateLayout();
-    setTasks((currentTasks) =>
+    updateActiveTasks((currentTasks) =>
       currentTasks.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task,
+      ),
+    );
+  };
+
+  const updateTaskDescription = (id: string, description: string) => {
+    updateActiveTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === id ? { ...task, description } : task,
       ),
     );
   };
@@ -112,7 +182,11 @@ export default function App() {
   const deleteTask = (id: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     animateLayout();
-    setTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
+    updateActiveTasks((currentTasks) => currentTasks.filter((task) => task.id !== id));
+  };
+
+  const reorderTasks = (reorderedTasks: Task[]) => {
+    updateActiveTasks(() => reorderedTasks);
   };
 
   const handleLogout = () => {
@@ -124,6 +198,7 @@ export default function App() {
       useNativeDriver: true,
     }).start(() => {
       setIsAuthed(false);
+      setActiveTaskKey('');
       setPassword('');
       setTaskText('');
       setIsTaskInputFocused(false);
@@ -139,10 +214,10 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.select({ ios: 'padding', default: undefined })}
-        style={styles.keyboardView}>
-        {isAuthed ? (
+      {isAuthed ? (
+        <KeyboardAvoidingView
+          behavior={Platform.select({ ios: 'padding', default: undefined })}
+          style={styles.keyboardView}>
           <TaskDashboard
             completedCount={completedCount}
             intro={intro}
@@ -150,14 +225,18 @@ export default function App() {
             onAddTask={addTask}
             onDeleteTask={deleteTask}
             onLogout={handleLogout}
+            onReorderTasks={reorderTasks}
             onTaskInputFocusChange={setIsTaskInputFocused}
             onToggleTask={toggleTask}
+            onUpdateTaskDescription={updateTaskDescription}
             setTaskText={setTaskText}
             taskText={taskText}
             tasks={tasks}
             totalCount={tasks.length}
           />
-        ) : (
+        </KeyboardAvoidingView>
+      ) : (
+        <View style={styles.keyboardView}>
           <LoginScreen
             intro={intro}
             onLogin={handleLogin}
@@ -166,8 +245,8 @@ export default function App() {
             setUsername={setUsername}
             username={username}
           />
-        )}
-      </KeyboardAvoidingView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

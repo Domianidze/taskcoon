@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Animated as RNAnimated, Easing, Pressable, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Reanimated, {
@@ -14,12 +14,22 @@ import type { Task } from '@/types/task';
 import { styles } from './styles';
 
 type TaskRowProps = {
+  isDragging?: boolean;
   onDelete: (id: string) => void;
+  onDrag: () => void;
+  onOpen: (id: string) => void;
   onToggle: (id: string) => void;
   task: Task;
 };
 
-export function TaskRow({ onDelete, onToggle, task }: TaskRowProps) {
+function TaskRowComponent({
+  isDragging = false,
+  onDelete,
+  onDrag,
+  onOpen,
+  onToggle,
+  task,
+}: TaskRowProps) {
   const checkScale = useRef(new RNAnimated.Value(task.completed ? 1 : 0)).current;
   const exitProgress = useRef(new RNAnimated.Value(0)).current;
   const [isDeleting, setIsDeleting] = useState(false);
@@ -90,6 +100,7 @@ export function TaskRow({ onDelete, onToggle, task }: TaskRowProps) {
       pointerEvents={isDeleting ? 'none' : 'auto'}
       style={[styles.taskExitWrap, exitStyle]}>
       <ReanimatedSwipeable
+        enabled={!isDragging}
         friction={1.12}
         dragOffsetFromRightEdge={4}
         enableTrackpadTwoFingerGesture
@@ -107,21 +118,38 @@ export function TaskRow({ onDelete, onToggle, task }: TaskRowProps) {
           <DeleteAction onPress={handleDelete} progress={progress} />
         )}>
         <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: task.completed }}
+          accessibilityRole="button"
+          delayLongPress={140}
+          onLongPress={onDrag}
           onPress={() => {
             if (!isDeleting) {
-              onToggle(task.id);
+              onOpen(task.id);
             }
           }}
-          style={[styles.taskRow, task.completed && styles.taskRowCompleted]}>
+          style={[
+            styles.taskRow,
+            task.completed && styles.taskRowCompleted,
+            isDragging && styles.taskRowDragging,
+          ]}>
           <View style={styles.taskContent}>
             <Text style={[styles.taskTitle, task.completed && styles.taskTitleCompleted]}>
               {task.title}
             </Text>
-            <Text style={styles.taskMeta}>{task.createdAt}</Text>
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.taskMeta,
+                !task.description?.trim() && styles.taskMetaHint,
+              ]}>
+              {task.description?.trim() || 'Tap to add a description'}
+            </Text>
           </View>
-          <View style={[styles.checkbox, task.completed && styles.checkboxCompleted]}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: task.completed }}
+            hitSlop={8}
+            onPress={() => onToggle(task.id)}
+            style={[styles.checkbox, task.completed && styles.checkboxCompleted]}>
             <RNAnimated.View
               style={[
                 styles.checkmarkWrap,
@@ -132,12 +160,21 @@ export function TaskRow({ onDelete, onToggle, task }: TaskRowProps) {
               ]}>
               <Feather name="check" size={19} color={palette.white} />
             </RNAnimated.View>
-          </View>
+          </Pressable>
         </Pressable>
       </ReanimatedSwipeable>
     </RNAnimated.View>
   );
 }
+
+export const TaskRow = memo(TaskRowComponent, (previous, next) => (
+  previous.isDragging === next.isDragging &&
+  previous.task.completed === next.task.completed &&
+  previous.task.createdAt === next.task.createdAt &&
+  previous.task.description === next.task.description &&
+  previous.task.id === next.task.id &&
+  previous.task.title === next.task.title
+));
 
 function DeleteAction({
   onPress,

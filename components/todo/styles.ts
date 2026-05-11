@@ -15,8 +15,8 @@ export const styles = StyleSheet.create({
   },
   logoutButton: {
     position: 'absolute',
-    top: 12,
-    left: 18,
+    top: 4,
+    left: 24,
     zIndex: 2,
     width: 44,
     height: 44,
@@ -238,6 +238,7 @@ export const styles = StyleSheet.create({
     opacity: 0.45,
   },
   section: {
+    flex: 1,
     marginBottom: 12,
   },
   sectionHeader: {
@@ -261,17 +262,21 @@ export const styles = StyleSheet.create({
   taskList: {
     gap: 12,
   },
-  swipeHintText: {
+  taskHintRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 6,
+    marginBottom: 10,
+  },
+  taskHintText: {
     color: palette.muted,
     opacity: 0.72,
     fontSize: 11,
     fontFamily: 'Nunito-Bold',
     letterSpacing: 0.2,
-    textAlign: 'right',
-    paddingHorizontal: 6,
-    marginBottom: -2,
   },
   taskExitWrap: {
+    paddingBottom: 12,
     overflow: 'hidden',
   },
   taskSwipeWrap: {
@@ -315,6 +320,11 @@ export const styles = StyleSheet.create({
   taskRowCompleted: {
     backgroundColor: palette.white,
   },
+  taskRowDragging: {
+    borderColor: palette.butter,
+    shadowOpacity: 0.14,
+    elevation: 7,
+  },
   checkbox: {
     width: 40,
     height: 40,
@@ -353,6 +363,10 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Nunito-Regular',
   },
+  taskMetaHint: {
+    fontFamily: 'Nunito-Bold',
+    opacity: 0.68,
+  },
   emptyState: {
     minHeight: 72,
     paddingHorizontal: 22,
@@ -366,5 +380,84 @@ export const styles = StyleSheet.create({
   },
   pressed: {
     transform: [{ scale: 0.98 }],
+  },
+  detailScreen: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 4,
+    paddingBottom: 18,
+    gap: 18,
+  },
+  detailTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  detailHeader: {
+    gap: 6,
+  },
+  detailEyebrow: {
+    color: palette.muted,
+    fontSize: 12,
+    fontFamily: 'Nunito-Bold',
+  },
+  detailTitle: {
+    color: palette.ink,
+    fontSize: 28,
+    fontFamily: 'Nunito-Black',
+    lineHeight: 34,
+  },
+  detailCloseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderWidth: 1,
+    borderColor: palette.line,
+    shadowColor: '#AD713B',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  detailSaveIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.butter,
+    shadowColor: '#AD713B',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 2,
+  },
+  detailSaveIconButtonDisabled: {
+    opacity: 0.5,
+  },
+  detailComposer: {
+    flex: 1,
+    borderRadius: 28,
+    paddingHorizontal: 22,
+    paddingVertical: 18,
+    backgroundColor: palette.white,
+    borderWidth: 1,
+    borderColor: palette.line,
+    shadowColor: '#AC6C31',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  detailDescriptionInput: {
+    flex: 1,
+    color: palette.ink,
+    fontSize: 16,
+    fontFamily: 'Nunito-SemiBold',
+    lineHeight: 22,
+    padding: 0,
   },
 });
